@@ -1,95 +1,248 @@
-import React, { useState, useEffect } from 'react';
-import { FiMic, FiMicOff, FiCheck, FiAlertCircle } from 'react-icons/fi';
+// Updated AIOrb.jsx with real recording
+import React, { useState, useRef, useEffect } from 'react';
+import { FiMic, FiMicOff, FiCheck, FiAlertCircle, FiUpload } from 'react-icons/fi';
 
-const AIOrb = ({ onRecordingStateChange, onAudioData }) => {
-  const [recordingState, setRecordingState] = useState('idle'); // idle, listening, processing, error
-  const [volume, setVolume] = useState(0);
+const AIOrb = ({ onRecordingComplete }) => {
+  const [recordingState, setRecordingState] = useState('idle');
+  const [audioURL, setAudioURL] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [recordingTime, setRecordingTime] = useState(0);
+  
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const timerRef = useRef(null);
 
-  const getOrbColor = () => {
-    switch (recordingState) {
-      case 'idle': return 'bg-gradient-to-r from-[#6D28D9] to-purple-800';
-      case 'listening': return 'bg-gradient-to-r from-[#34D399] to-emerald-500';
-      case 'processing': return 'bg-gradient-to-r from-[#6D28D9] to-blue-500';
-      case 'error': return 'bg-gradient-to-r from-[#FB7185] to-red-500';
-      default: return 'bg-gradient-to-r from-[#6D28D9] to-purple-800';
-    }
-  };
-
-  const getIcon = () => {
-    switch (recordingState) {
-      case 'idle': return <FiMic size={32} />;
-      case 'listening': return <div className="w-6 h-6 bg-white rounded-full animate-pulse"></div>;
-      case 'processing': return <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>;
-      case 'error': return <FiAlertCircle size={32} />;
-      default: return <FiMic size={32} />;
-    }
-  };
-
-  const handleStartRecording = () => {
-    setRecordingState('listening');
-    onRecordingStateChange('listening');
-    
-    // Simulate volume changes
-    const interval = setInterval(() => {
-      setVolume(Math.floor(Math.random() * 80) + 20);
-    }, 100);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      setRecordingState('processing');
-      onRecordingStateChange('processing');
+  const startRecording = async () => {
+    try {
+      setRecordingState('listening');
       
-      setTimeout(() => {
-        setRecordingState('idle');
-        onRecordingStateChange('idle');
-        if (onAudioData) {
-          onAudioData({ transcript: "Sample claim transcript for demonstration", duration: "45s" });
+      // Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 48000
         }
-      }, 2000);
-    }, 5000);
+      });
+      
+      streamRef.current = stream;
+      
+      // Create MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Setup data handler
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      // Setup stop handler
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: 'audio/webm;codecs=opus' 
+        });
+        
+        // Create URL for playback
+        const url = URL.createObjectURL(audioBlob);
+        setAudioURL(url);
+        
+        // Send to backend for processing
+        await processAudio(audioBlob);
+        
+        // Reset
+        audioChunksRef.current = [];
+      };
+      
+      // Start recording
+      mediaRecorder.start(1000); // Collect data every second
+      
+      // Start timer
+      let seconds = 0;
+      timerRef.current = setInterval(() => {
+        seconds += 1;
+        setRecordingTime(seconds);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      setRecordingState('error');
+    }
   };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && 
+        mediaRecorderRef.current.state === 'recording') {
+      
+      clearInterval(timerRef.current);
+      mediaRecorderRef.current.stop();
+      
+      // Stop all tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      setRecordingState('processing');
+    }
+  };
+
+  const processAudio = async (audioBlob) => {
+    try {
+      // Create FormData to send audio file
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('language', 'en-NG'); // Nigerian English
+      
+      // Send to backend API
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setTranscript(data.transcript);
+        setRecordingState('completed');
+        
+        // Pass data to parent component
+        if (onRecordingComplete) {
+          onRecordingComplete({
+            audioBlob: audioBlob,
+            audioURL: audioURL,
+            transcript: data.transcript,
+            keywords: data.keywords,
+            sentiment: data.sentiment,
+            duration: recordingTime
+          });
+        }
+      } else {
+        throw new Error('Transcription failed');
+      }
+      
+    } catch (error) {
+      console.error('Processing error:', error);
+      setRecordingState('error');
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Real-time volume visualization
+  const [volume, setVolume] = useState(0);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+
+  const setupAudioAnalysis = (stream) => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+      
+      // Analyze volume in real-time
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      
+      const analyzeVolume = () => {
+        if (analyserRef.current && recordingState === 'listening') {
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          setVolume(Math.min(100, average));
+          requestAnimationFrame(analyzeVolume);
+        }
+      };
+      
+      analyzeVolume();
+    }
+  };
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center space-y-6">
+      {/* Volume visualization */}
+      {recordingState === 'listening' && (
+        <div className="w-64 h-4 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-[#34D399] to-emerald-500 transition-all duration-100"
+            style={{ width: `${volume}%` }}
+          ></div>
+        </div>
+      )}
+      
+      {/* Recording timer */}
+      {recordingState === 'listening' && (
+        <div className="text-2xl font-bold text-[#111827]">
+          {formatTime(recordingTime)}
+        </div>
+      )}
+      
+      {/* AI Orb */}
       <div className="relative">
-        {/* Outer glow */}
-        <div className={`absolute inset-0 ${getOrbColor()} blur-xl opacity-50 rounded-full orb-glow`}></div>
+        <div className={`absolute inset-0 ${
+          recordingState === 'listening' ? 'bg-gradient-to-r from-[#34D399] to-emerald-500' :
+          recordingState === 'processing' ? 'bg-gradient-to-r from-[#6D28D9] to-blue-500' :
+          recordingState === 'completed' ? 'bg-gradient-to-r from-[#34D399] to-emerald-500' :
+          'bg-gradient-to-r from-[#6D28D9] to-purple-800'
+        } blur-xl opacity-50 rounded-full orb-glow`}></div>
         
-        {/* Main orb */}
-        <div 
-          className={`relative w-48 h-48 ${getOrbColor()} rounded-full flex items-center justify-center shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105`}
-          onClick={recordingState === 'idle' ? handleStartRecording : null}
+        <button
+          onClick={recordingState === 'idle' ? startRecording : 
+                  recordingState === 'listening' ? stopRecording : null}
+          disabled={recordingState === 'processing'}
+          className={`relative w-48 h-48 ${
+            recordingState === 'listening' ? 'bg-gradient-to-r from-[#34D399] to-emerald-500' :
+            recordingState === 'processing' ? 'bg-gradient-to-r from-[#6D28D9] to-blue-500' :
+            recordingState === 'completed' ? 'bg-gradient-to-r from-[#34D399] to-emerald-500' :
+            'bg-gradient-to-r from-[#6D28D9] to-purple-800'
+          } rounded-full flex items-center justify-center shadow-2xl cursor-pointer transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed`}
         >
           <div className="text-white">
-            {getIcon()}
+            {recordingState === 'idle' && <FiMic size={32} />}
+            {recordingState === 'listening' && (
+              <div className="w-8 h-8 bg-white rounded-full animate-pulse"></div>
+            )}
+            {recordingState === 'processing' && (
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            )}
+            {recordingState === 'completed' && <FiCheck size={32} />}
+            {recordingState === 'error' && <FiAlertCircle size={32} />}
           </div>
-          
-          {/* Volume visualization */}
-          {recordingState === 'listening' && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div 
-                className="absolute bg-white/30 rounded-full transition-all duration-100"
-                style={{ width: `${volume}%`, height: `${volume}%` }}
-              ></div>
-            </div>
-          )}
+        </button>
+      </div>
+      
+      {/* Transcript preview */}
+      {transcript && (
+        <div className="mt-6 p-4 bg-[#F9FAFB] rounded-xl max-w-md">
+          <h3 className="font-semibold text-[#111827] mb-2">AI Transcript:</h3>
+          <p className="text-[#374151]">{transcript}</p>
         </div>
-      </div>
-
-      <div className="text-center">
-        <h3 className="text-xl font-semibold text-[#111827] mb-2">
-          {recordingState === 'idle' && 'Tap to Start Recording'}
-          {recordingState === 'listening' && 'Listening... Speak Now'}
-          {recordingState === 'processing' && 'Processing Your Claim'}
-          {recordingState === 'error' && 'Recording Error'}
-        </h3>
-        <p className="text-[#374151]">
-          {recordingState === 'idle' && 'Describe your claim in simple words'}
-          {recordingState === 'listening' && 'We\'re listening. Speak clearly about what happened.'}
-          {recordingState === 'processing' && 'AI is analyzing your claim details'}
-          {recordingState === 'error' && 'Please try again or contact support'}
-        </p>
-      </div>
+      )}
+      
+      {/* Audio playback */}
+      {audioURL && (
+        <audio controls src={audioURL} className="mt-4" />
+      )}
     </div>
   );
 };

@@ -4,6 +4,8 @@ import ClaimPage from './pages/ClaimPage';
 import PaymentPage from './pages/PaymentPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminClaimDetail from './pages/AdminClaimDetail';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
 function App() {
   return (
@@ -11,6 +13,8 @@ function App() {
       <div className="min-h-screen bg-[#F9FAFB]">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route path="/claim" element={<ClaimPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/admin" element={<AdminDashboard />} />

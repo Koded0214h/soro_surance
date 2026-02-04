@@ -43,7 +43,27 @@ const HomePage = () => {
             </button>
           </div>
         </section>
-
+        
+<section className="bg-gradient-to-r from-[#6D28D9] to-purple-700 rounded-2xl p-8 text-white mb-12">
+  <div className="max-w-4xl mx-auto text-center">
+    <h2 className="text-2xl font-bold mb-4">Get Protected in 2 Minutes</h2>
+    <p className="mb-6">Sign up now and get your first month of basic coverage FREE</p>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <Link 
+        to="/signup" 
+        className="bg-white text-[#6D28D9] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+      >
+        Start Free Trial
+      </Link>
+      <Link 
+        to="/login" 
+        className="bg-transparent border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+      >
+        Existing User? Login
+      </Link>
+    </div>
+  </div>
+</section>
         {/* AI Orb Demo */}
         <section className="mb-16">
           <div className="max-w-2xl mx-auto">
