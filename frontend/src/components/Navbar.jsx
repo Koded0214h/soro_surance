@@ -11,7 +11,7 @@ const Navbar = ({ isAdmin = false }) => {
   const isLoggedIn = false; // Change to true to test logged-in state
 
   return (
-    <nav className="bg-[#111827] text-white px-4 py-3 shadow-lg">
+    <nav className="bg-[#560591] text-white px-4 py-3 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <button className="lg:hidden">
