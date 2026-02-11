@@ -22,10 +22,10 @@ const HomePage = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <section className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#111827] mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#111827] mb-9 mt-12">
             Voice-First <span className="text-[#6D28D9]">AI Insurance</span> for Nigeria
           </h1>
-          <p className="text-xl text-[#374151] max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-[#374151] max-w-3xl mx-auto mb-11">
             File claims, get insured, and manage payments—all through simple voice commands. 
             Accessible to everyone, regardless of literacy level.
           </p>
@@ -44,7 +44,7 @@ const HomePage = () => {
           </div>
         </section>
         
-<section className="bg-gradient-to-r from-[#6D28D9] to-purple-700 rounded-2xl p-8 text-white mb-12">
+<section className="bg-gradient-to-r from-[#111827] via-[#6d28d9] to-[#111827] rounded-2xl p-8 text-white mb-12">
   <div className="max-w-4xl mx-auto text-center">
     <h2 className="text-2xl font-bold mb-4">Get Protected in 2 Minutes</h2>
     <p className="mb-6">Sign up now and get your first month of basic coverage FREE</p>
