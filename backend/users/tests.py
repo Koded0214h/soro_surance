@@ -68,7 +68,7 @@ class UserAPITests(APITestCase):
             first_name='Admin',
             last_name='User',
             password='admin123',
-            user_type='admin'
+            user_type='admin'          # extra field allowed
         )
         
         self.customer_user = self.User.objects.create_user(
@@ -77,7 +77,7 @@ class UserAPITests(APITestCase):
             first_name='Customer',
             last_name='User',
             password='customer123',
-            user_type='customer'
+            user_type='customer'        # extra field allowed
         )
     
     def test_user_registration(self):

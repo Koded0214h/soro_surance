@@ -8,8 +8,10 @@ router.register(r'profiles', views.UserProfileViewSet, basename='profile')
 router.register(r'admin/users', views.AdminUserViewSet, basename='admin-user')
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Custom endpoints go first to avoid being caught by router
     path('register/', views.UserRegistrationView.as_view(), name='register'),
     path('login/', views.UserLoginView.as_view(), name='login'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
+    # Router URLs
+    path('', include(router.urls)),
 ]

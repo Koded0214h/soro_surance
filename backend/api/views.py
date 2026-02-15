@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q, Count, Avg, Sum
+from django.db.models import Case, When, Avg, Count, Sum, Q, F
 from django.utils import timezone
 from datetime import timedelta
 import uuid
@@ -24,6 +24,10 @@ from .services import (
     PaymentService, NotificationService, USSDService
 )
 from users.permissions import IsOwnerOrAdmin, IsAdminOrReviewer, IsCustomer
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class InsuranceProductViewSet(viewsets.ReadOnlyModelViewSet):

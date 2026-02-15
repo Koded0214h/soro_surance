@@ -21,8 +21,8 @@ class UserRegistrationView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             
-            # Create user profile
-            UserProfile.objects.create(user=user)
+            # User profile is created automatically via signal
+            # UserProfile.objects.create(user=user)
             
             # Log activity
             UserActivity.objects.create(
@@ -181,7 +181,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrReviewer]
     queryset = User.objects.all()
-    
+
     @action(detail=True, methods=['post'])
     def update_soro_score(self, request, pk=None):
         user = self.get_object()

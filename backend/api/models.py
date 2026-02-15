@@ -2,8 +2,17 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 import uuid
+import json
+from decimal import Decimal
 
 User = get_user_model()
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 class InsuranceProduct(models.Model):
@@ -387,7 +396,7 @@ class AdminDashboard(models.Model):
         USER_ANALYTICS = 'user_analytics', _('User Analytics')
     
     dashboard_type = models.CharField(max_length=50, choices=DashboardType.choices, unique=True)
-    data = models.JSONField(default=dict)
+    data = models.JSONField(default=dict, encoder=DecimalEncoder)
     last_updated = models.DateTimeField(auto_now=True)
     refresh_interval = models.IntegerField(default=300)  # seconds
     

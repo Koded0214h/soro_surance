@@ -14,6 +14,7 @@ import os
 import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'drf_spectacular',
     
     # Local apps
     'users',
@@ -91,7 +93,7 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASE_URL = os.getenv("DATABASE_URL")
 if(DATABASE_URL):
     DATABASES = {
-        'default': {dj_database_url.config(default=DATABASE_URL)}
+        "default": dj_database_url.config(default=DATABASE_URL)
     }
 else:
     DATABASES = {
@@ -156,6 +158,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # JWT Settings
@@ -218,3 +221,18 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+AUTH_USER_MODEL = 'users.User'
+
+# drf-spectacular settings (optional but recommended)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SoroSurance API',
+    'DESCRIPTION': 'Insurance platform API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,  # exclude schema from browsable API
+    # other settings as needed
+}
+
+
+
+BASE_URL = 'http://localhost:8000' 

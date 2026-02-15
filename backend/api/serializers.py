@@ -24,7 +24,15 @@ class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = Policy
         fields = '__all__'
-        read_only_fields = ('policy_number', 'created_at', 'updated_at')
+        read_only_fields = ('policy_number', 'created_at', 'updated_at', 'user',)
+        extra_kwargs = {
+            'initial_soro_score': {'required': False},
+            'current_soro_score': {'required': False},
+            'premium_amount': {'required': False},
+            'coverage_amount': {'required': False},
+            'deductible_amount': {'required': False},
+        }
+
 
 
 class VoiceAnalysisSerializer(serializers.ModelSerializer):
@@ -49,7 +57,8 @@ class ClaimSerializer(serializers.ModelSerializer):
             'claim_number', 'soro_score', 'risk_level', 'sentiment_score',
             'urgency_score', 'inconsistency_score', 'keywords',
             'auto_approval_recommended', 'reviewed_by', 'reviewed_at',
-            'paid_at', 'submitted_at', 'created_at', 'updated_at'
+            'paid_at', 'submitted_at', 'created_at', 'updated_at',
+            'user',   # Re-added as it's set by viewset perform_create
         )
     
     def create(self, validated_data):
